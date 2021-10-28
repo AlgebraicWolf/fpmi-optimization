@@ -105,7 +105,7 @@ class NelderMeadOptimizer:
             xprev = xs[0]
 
             # Step 2. Centroid
-            x_o = (np.sum(xs) - xs[n]) / n
+            x_o = (np.sum(xs, axis=0) - xs[n]) / n
 
             # Step 3. Reflection
             x_r = x_o + self.alpha * (x_o - xs[n])
@@ -131,6 +131,7 @@ class NelderMeadOptimizer:
                 xs[n] = x_c
                 continue
 
+            # Step 6. Shrink
             xs[1:] = xs[0] + self.sigma * (xs[0] - xs[1:])
             continue
 
