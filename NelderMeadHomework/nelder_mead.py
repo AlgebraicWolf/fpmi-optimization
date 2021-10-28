@@ -24,46 +24,88 @@
 # ~~~\@@@@@@@@@@@@@@||       |\___________________________/|@/~~~~~~~~~~~\@@@
 #     |~~~~\@@@@@@@/ |  |    | | by: S.C.E.S.W.          | ||\____________|@@
 #
-# Nelder-Mead optimizer written in Python 
+# Nelder-Mead optimizer written in Python
 # Author: Aleksei Volkov (@AlgebraicWolf)
 
 import numpy as np
 
+
 class NelderMeadOptimizer:
-    def __init__(self, alpha=1.0, gamma=2.0, rho=0.5, sigma=0.5):
+    def __init__(self, alpha=1.0, gamma=2.0, rho=0.5, sigma=0.5, log_simplices=False):
         self.alpha = alpha
         self.gamma = gamma
         self.rho = rho
         self.sigma = sigma
-        self.f = None
+        self.log_simplices = log_simplices
+        self.simplices = list()
 
-    def minimize(self, fun, initial_simplex):
-        # TODO Write termination condition
-        # TODO Write simplex logging for fancy graphics
+    def get_simplices_log(self):
+        """
+        Return simplices log of the last optimization
+
+        Retruns:
+            List of 2d numpy arrays of shape (n + 1, n) -- List of simplexes at all the steps
+        """
+
+        return self.simplices
+
+    def minimize(self, fun, initial_simplex, max_iterations=-1, fatol=None, xatol=None):
         """
         Run Nelder-Mead optimizer on function
-        
+
         Args:
             fun: np.array[a, n] -> np.array[a] -- Function to optimize (expected to be vectorized)
             initial_simplex: 2d numpy array (n + 1, n) -- Simplex to start optimization with
-
+            max_iterations: int -- Maximum number of iterations (set to any negative in case you want to make it unbounded)
+            fatol: int -- Difference between optimal values of two iteration below which the algorithm stops
+            xatol: int -- Difference between points of optimum of two iterations below which the algorithm stops
         Returns:
             1d numpy array (a,) -- Minimum detected by the function
         """
+        if (fatol is None) and (xatol is None and max_iterations < 0):
+            raise Exception("Algorithm is guaranteed to never converge")
+
+        self.simplices = list()
+
+        xprev = None
+        fprev = None
+
         xs = initial_simplex
         n = xs.shape[0] - 1
-        while True:
+        iterations = 0
+        while iterations != max_iterations:
+            if self.log_simplices:
+                self.simplices.append(xs)  # Save current simplex to the log
+
             # Step 1. Ordering simplex vertices
+
             fs = fun(xs)
             sorted_indices = np.argsort(fs)
             xs = xs[sorted_indices]  # Perform sorting on simplex vertices
+            # Don't forget to sort function values as well
+            fs = fs[sorted_indices]
+
+            # Check termination conditions
+            if fatol is not None and iterations > 0:
+                if np.abs(fprev - fs[0]) < fatol:
+                    break
+
+            if xatol is not None and iterations > 0:
+                print(xprev - xs[0])
+                if np.linalg.norm(xprev - xs[0]) < xatol:
+                    break
+
+            iterations += 1
+
+            fprev = fs[0]
+            xprev = xs[0]
 
             # Step 2. Centroid
             x_o = (np.sum(xs) - xs[n]) / n
 
-            # Step 3. Reflection 
+            # Step 3. Reflection
             x_r = x_o + self.alpha * (x_o - xs[n])
-            f_r = fun(x_r) 
+            f_r = fun(x_r)
             if fs[0] <= f_r and f_r < fs[n - 1]:
                 xs[n] = x_r
                 continue
@@ -85,7 +127,7 @@ class NelderMeadOptimizer:
                 xs[n] = x_c
                 continue
 
-            xs[1:] = xs[0] + self.sigma * (xs[0] - xs)
+            xs[1:] = xs[0] + self.sigma * (xs[0] - xs[1:])
             continue
-            break
-        pass
+
+        return xs[0]
