@@ -49,7 +49,7 @@ class NelderMeadOptimizer:
 
         return self.simplices
 
-    def minimize(self, fun, initial_simplex, max_iterations=-1, fatol=None, xatol=None):
+    def minimize(self, fun, initial_simplex, max_iterations=-1, fatol=None, xatol=None, vartol=None):
         """
         Run Nelder-Mead optimizer on function
 
@@ -57,8 +57,9 @@ class NelderMeadOptimizer:
             fun: np.array[a, n] -> np.array[a] -- Function to optimize (expected to be vectorized)
             initial_simplex: 2d numpy array (n + 1, n) -- Simplex to start optimization with
             max_iterations: int -- Maximum number of iterations (set to any negative in case you want to make it unbounded)
-            fatol: int -- Difference between optimal values of two iteration below which the algorithm stops
-            xatol: int -- Difference between points of optimum of two iterations below which the algorithm stops
+            fatol: double -- Difference between optimal values of two iteration below which the algorithm stops
+            xatol: double -- Difference between points of optimum of two iterations below which the algorithm stops
+            vartol: double -- Norm of variance of points below which the algorithm terminates
         Returns:
             1d numpy array (a,) -- Minimum detected by the function
         """
@@ -91,8 +92,11 @@ class NelderMeadOptimizer:
                     break
 
             if xatol is not None and iterations > 0:
-                print(xprev - xs[0])
                 if np.linalg.norm(xprev - xs[0]) < xatol:
+                    break
+
+            if vartol is not None and iterations > 0:
+                if np.linalg.norm(np.var(xs, axis=0)) < vartol:
                     break
 
             iterations += 1
