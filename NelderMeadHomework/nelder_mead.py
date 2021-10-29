@@ -32,6 +32,18 @@ import numpy as np
 
 class NelderMeadOptimizer:
     def __init__(self, alpha=1.0, gamma=2.0, rho=0.5, sigma=0.5, log_simplices=False):
+        if alpha <= 0:
+            raise Exception("Alpha parameter is expected to be greater than 0")
+
+        if gamma <= 1:
+            raise Exception("Gamma parameter is expected to be greater than 1")
+
+        if rho <= 0 or rho > 0.5:
+            raise Exception("Rho parameter is expected to be from (0, 0.5]")
+
+        if sigma <= 0:
+            raise Exception("Sigma parameter is expected to be greater than 0")
+
         self.alpha = alpha
         self.gamma = gamma
         self.rho = rho
@@ -63,7 +75,7 @@ class NelderMeadOptimizer:
         Returns:
             1d numpy array (a,) -- Minimum detected by the function
         """
-        if (fatol is None) and (xatol is None and max_iterations < 0):
+        if (fatol is None) and (xatol is None) and (vartol is None) and max_iterations < 0:
             raise Exception("Algorithm is guaranteed to never converge")
 
         self.simplices = list()
